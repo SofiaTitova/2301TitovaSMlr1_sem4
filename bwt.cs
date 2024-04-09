@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace bwt___mft___rlf___ha
+namespace bwt_rle
 {
     public class Tuple : IComparable<Tuple>
     {

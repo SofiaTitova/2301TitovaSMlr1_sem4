@@ -1,31 +1,16 @@
-﻿using bwt___mft___rlf___ha;
+﻿using bwt_rle;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace bwt___mtf___ha
+namespace burrows_wheeler_transform
 {
-    public class HeapNode
-    {
-        public char Sym { get; set; }
-        public int Val { get; set; }
-        public HeapNode LeftChild { get; set; }
-        public HeapNode RightChild { get; set; }
-
-        public HeapNode(char sym, int val)
-        {
-            Sym = sym;
-            Val = val;
-        }
-    }
-
     public class FileCompressionRatio
     {
         public static double GetCompressionRatio(string filePath1, string filePath2)
@@ -53,123 +38,35 @@ namespace bwt___mtf___ha
         static void Main(string[] args)
         {
 
-
-            string graf = "enwik7.txt"; //"graph.txt"
+            string graf = "text.txt"; /*"output2.txt"; //"graph.txt"*/
             string graf_bwt = "bwt_graf.txt";
             string graf_res = "resgraph.txt";
             //bigBWT(graf, graf_bwt);
             BWTFast bwt = new BWTFast();
             string wholeText = "";
             string line = "";
-            using (StreamWriter res = new StreamWriter(graf_bwt))
+            using (StreamWriter res = new StreamWriter(graf_bwt)) 
             {
-                using (StreamReader reader = new StreamReader(graf, Encoding.UTF8))
+                using (StreamReader reader = new StreamReader(graf, Encoding.UTF8)) 
                 {
-                    while ((line = reader.ReadLine()) != null)
+                    while ((line = reader.ReadLine()) != null) 
                     {
-                        wholeText += line;
-
+                       wholeText+= line;
+                        
                     }
                 }
                 bwt.GetBWT(wholeText);
                 res.Write(wholeText);
             }
-            Console.WriteLine("+");
+           Console.WriteLine("+");
 
-            List<char> newAlphabet = new List<char>();
-            int index = 0;
-            line = "";
-            string result = "";
-
-            while (index < wholeText.Length)
-            {
-                int k = Math.Min(100, wholeText.Length - index);
-                line = wholeText.Substring(index, k);
-                newAlphabet = alphabet(line);
-                result += MTF(line, newAlphabet);
-                index += k;
-
-            }
-            Console.WriteLine("+");
-            result = rle(result);
-            Console.WriteLine("+");
-            using (FileStream fileStream = new FileStream(graf_res, FileMode.Create, FileAccess.Write))
-            {
-                index = 0;
-                while (index < result.Length)
-                {
-                    int k = Math.Min(100, result.Length - index);
-                    wholeText = result.Substring(index, k);
-                    int[] p;
-                    char[] symb;
-
-                    textAlphabet(wholeText, out symb, out p);
-
-                    string[] keys = new string[symb.Length];
-                    char[] chars = new char[symb.Length];
-
-                    HuffCodes(symb, p, out chars, out keys);
-                    HcAlg(wholeText, keys, chars, fileStream);
-                    index += k;
-                }
-            }
-
+            rle(graf_bwt , graf_res);
             double re = FileCompressionRatio.GetCompressionRatio(graf_res, graf);
             Console.WriteLine(re);
             Console.ReadKey();
 
         }
-        static string rle(string gr)
-        {
-            string line = gr;
-            string hlp = "";
-            char currentChar = '0';
-            int count = 1;
-            int index = 0;
-            string res = "";
-
-            while (index < (line.Length - 2))
-            {
-                currentChar = line[index];
-                if (currentChar == line[index + 1])
-                {
-                    count++;
-                    index++;
-                }
-                else
-                {
-
-                    if (count == 1)
-                    {
-                        index++;
-                        hlp += line[index - 1];
-                        while (line[index] != line[index - 1] && index != line.Length - 1)
-                        {
-                            hlp += line[index];
-                            index++;
-                        }
-                        hlp = hlp.Substring(0, hlp.Length - 1);
-                        res += '&';
-                        res +=hlp;
-                        res +='&';
-                        hlp = "";
-                        index--;
-                    }
-                    else
-                    {
-                        res += (char)(count);
-                        res += currentChar;
-                        count = 1;
-                        index++;
-                    }
-                }
-
-                
-            }
-            res += (char)(count);
-            res += currentChar;
-            return res;
-        }
+       
         static void BWT(out string result, string inStr, ref int ind)
         {
             result = "";
@@ -202,40 +99,64 @@ namespace bwt___mtf___ha
             }
 
         }
-        static List<char> alphabet(string s)
+        static void rle(string gr, string grRes)
         {
-            List<char> chars = new List<char>();
-            for (int i = 0; i < s.Length; i++)
+            using (StreamReader reader = new StreamReader(gr, Encoding.UTF8)) //чтение построчно
             {
-                if (!chars.Contains(s[i]))
+                using (StreamWriter res = new StreamWriter(grRes, false))
                 {
-                    chars.Add(s[i]);
+                    string line;
+                    string hlp = "";
+                    char currentChar = '0';
+                    while ((line = reader.ReadLine()) != null) // пптриааа
+                    {
+                        int count = 1;
+                        int index = 0;
+
+                        while (index < (line.Length - 2))
+                        {
+                            currentChar = line[index];
+                            if (currentChar == line[index + 1])
+                            {
+                                count++;
+                                index++;
+                            }
+                            else
+                            {
+
+                                if (count == 1)
+                                {
+                                    index++;
+                                    hlp += line[index - 1];
+                                    while (line[index] != line[index - 1] && index != line.Length - 1)
+                                    {
+                                        hlp += line[index];
+                                        index++;
+                                    }
+                                    hlp = hlp.Substring(0, hlp.Length - 1);
+                                    res.Write('&');
+                                    res.Write(hlp);
+                                    res.Write('&');
+                                    hlp = "";
+                                    index--;
+                                }
+                                else
+                                {
+                                    res.Write((char)(count));
+                                    res.Write(currentChar);
+                                    count = 1;
+                                    index++;
+                                }
+                            }
+
+                        }
+
+                        res.Write((char)(count));
+                        res.Write(currentChar);
+                        res.Write('\n');
+                    }
                 }
             }
-            chars.Sort((a, b) => a.CompareTo(b));
-            return chars;
-        }
-
-        static string MTF(string s, List<char> alphabet)
-        {
-            string res = "";
-            int ind;
-            char symbol;
-            string integerVal;
-            char strEl;
-            char removedChar;
-            for (int i = 0; i < s.Length; i++)
-            {
-                symbol = s[i];
-                ind = alphabet.IndexOf(symbol);
-                integerVal = ind.ToString();
-                strEl = (char)(ind + 34);
-                res += strEl.ToString() /*integerVal*/;
-                removedChar = alphabet[ind];
-                alphabet.RemoveAt(ind);
-                alphabet.Insert(0, removedChar);
-            }
-            return res;
         }
         static void bigBWT(string inp, string outp)
         {
@@ -276,140 +197,5 @@ namespace bwt___mtf___ha
             }
         }
 
-
-
-        public static void HuffCodes(char[] s, int[] v, out char[] chars, out string[] keys)
-        {
-            chars = new char[s.Length];
-            keys = new string[s.Length];
-
-            var minHeap = new SortedSet<HeapNode>(Comparer<HeapNode>.Create((a, b) =>
-            {
-                int valComparison = a.Val.CompareTo(b.Val);
-                if (valComparison != 0)
-                {
-                    return valComparison;
-                }
-                // если значения равны, сравниваем символы
-                return a.Sym.CompareTo(b.Sym);
-            }));
-
-            int i = 0;
-            for (i = 0; i < s.Length; i++)
-            {
-                minHeap.Add(new HeapNode(s[i], v[i]));
-            }
-
-            while (minHeap.Count > 1)
-            {
-                var leftChild = minHeap.First();
-                minHeap.Remove(leftChild);
-
-                var rightChild = minHeap.First();
-                minHeap.Remove(rightChild);
-
-                var tmp = new HeapNode('+', (leftChild.Val + rightChild.Val));
-                tmp.LeftChild = leftChild;
-                tmp.RightChild = rightChild;
-
-                minHeap.Add(tmp);
-            }
-            i = 0;
-            if (chars.Length > 0)
-            {
-                CodesToArr(minHeap.First(), chars, keys, "", ref i);
-            }
-
-        }
-
-        public static void CodesToArr(HeapNode root, char[] symb, string[] freq, string str, ref int i)
-        {
-            if (root == null)
-            {
-                return;
-            }
-
-            if (root.Sym != '+')
-            {
-                symb[i] = root.Sym;
-                freq[i] = str;
-                i++;
-            }
-
-            CodesToArr(root.LeftChild, symb, freq, str + "0", ref i);
-            CodesToArr(root.RightChild, symb, freq, str + "1", ref i);
-        }
-
-
-        public static void HcAlg(string main, string[] keys, char[] chars, Stream outputStream)
-        {
-            BitArray res = new BitArray(main.Length * 8);
-            int bitIndex = 0;
-
-            for (int i = 0; i < main.Length; i++)
-            {
-                char tmp = main[i];
-                int index = Array.IndexOf(chars, tmp);
-                string key = "";
-                if (index != -1)
-                {
-                    key = keys[index];
-                }
-
-                foreach (char keyChar in key)
-                {
-                    if (keyChar == '1')
-                    {
-                        res[bitIndex] = true;
-                    }
-                    else if (keyChar == '0')
-                    {
-                        res[bitIndex] = false;
-                    }
-                    bitIndex++;
-                }
-            }
-
-            if (bitIndex < res.Length)
-            {
-                BitArray trimmedRes = new BitArray(bitIndex);
-                for (int i = 0; i < bitIndex; i++)
-                {
-                    trimmedRes[i] = res[i];
-                }
-                res = trimmedRes;
-            }
-
-            byte[] bytes = new byte[(res.Length - 1) / 8 + 1];
-            res.CopyTo(bytes, 0);
-
-            outputStream.Write(bytes, 0, bytes.Length);
-        }
-
-        public static void textAlphabet(string s, out char[] chars, out int[] pos)
-        {
-            var alphabet = s.Where(c => char.IsLetter(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c)).Distinct().OrderBy(c => c).ToArray();
-            Array.Sort(alphabet);
-            chars = alphabet;
-            int[] freq = new int[chars.Length];
-            pos = new int[chars.Length];
-            int k = 0;
-            foreach (char ch in s)
-            {
-                for (int i = 0; i < chars.Length; i++)
-                {
-                    if (ch == alphabet[i])
-                    {
-                        freq[i] += 1;
-                        k++;
-                        break;
-                    }
-                }
-            }
-            for (int i = 0; i < chars.Length; i++)
-            {
-                pos[i] += freq[i];
-            }
-        }
     }
 }
