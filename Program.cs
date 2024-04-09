@@ -1,63 +1,104 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace stringLen
+namespace suffix1
 {
-    internal class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main()
         {
-            string text = "text.txt";
-            if (!File.Exists(text)) // проверка существования
+            string text = "абракадабра";
+            Console.WriteLine("Строка: " + text);
+            int[] suffixArray = suffArr(text);
+            Console.WriteLine("Cуффиксный массив");
+            foreach (int i in suffixArray)
             {
-                Console.WriteLine("Файл не найден.");
-                return;
+                Console.Write(i + " ");
             }
-            double result = 0;
-            using (StreamReader reader = new StreamReader(text, Encoding.UTF8)) //чтение построчно
+            Console.WriteLine();
+            string newStr = "абракадабра";
+            int[] suffArray = { 10, 7, 0, 5, 3, 8, 1, 6, 4, 9, 2 };
+
+            string lastColumn = getLastCol(newStr, suffArray);
+            Console.WriteLine("Последний столбец: " + lastColumn);
+            //string str = "banana$";
+            string str = "aaaaaaab$";
+            Console.WriteLine("Для слова: {0}", str);
+            char[] suf = new char[str.Length];
+            suf = getSuf(str);
+            Console.WriteLine("Суффиксный массив:");
+            foreach (char c in suf)
             {
-                result = strLen(reader);
-                Console.WriteLine(result.ToString("F2"));
+                Console.Write("{0} ",(char)c);
             }
             Console.ReadKey();
         }
-        static double strLen(StreamReader reader)
+
+        public static char[] getSuf(string s)
         {
-            string line;
-            double k = 0;
-            double part = 0;
-            double j = 0;
-            double len = 0;
-            while ((line = reader.ReadLine()) != null)
+            char[] res = new char[s.Length];
+            res[s.Length - 1] = 'S';
+            res[s.Length - 2] = 'L';
+            for (int i = s.Length - 3; i >=0; i--)
             {
-                len += line.Length;
-                for (int i = 0; i < line.Length - 1; i ++)
+                if (s[i] < s[i + 1])
                 {
-                    if (line[i] == line[i + 1])
-                    {
-                        k++;
-                        if (j == 0)
-                        {
-                            part++;
-                            j++;
-                        }
-                    }
-                    else 
-                    {
-                        j = 0;
-                    }
+                    res[i] = 'S';
+                }
+                else if (s[i] > s[i + 1])
+                {
+                    res[i] = 'L';
+                }
+                else
+                {
+                    res[i] = res[i + 1];
                 }
             }
-            k = k + part;
-            double lengthStr;
-            Console.WriteLine(k);
-            Console.WriteLine(part);
-            lengthStr = (k - 2 * part) / len;
-            return lengthStr;
+            return res;
+        }
+        public static string getLastCol(string s, int[] suffixArray)
+        {
+            int len = s.Length;
+            int ind = 0;
+            StringBuilder lastColumn = new StringBuilder();
+            for (int i = 0; i < len; i++)
+            {
+                ind = suffixArray[i];
+                if (ind == 0)
+                {
+                    lastColumn.Append(s[len - 1]);
+                }
+                else
+                {
+                    lastColumn.Append(s[ind - 1]);
+                }
+            }
+            return lastColumn.ToString();
+        }
+
+
+
+        public static int[] suffArr(string s)
+        {
+            int len = s.Length;
+            string[] suffixes = new string[len];
+            for (int i = 0; i < len; i++)
+            {
+                suffixes[i] = s.Substring(i);
+            }
+            Array.Sort(suffixes);
+            int[] suffixArray = new int[len];
+            for (int i = 0; i < len; i++)
+            {
+                suffixArray[i] = len - suffixes[i].Length;
+            }
+            return suffixArray;
         }
     }
 }
+
+
