@@ -3,10 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace lz77___ac
+namespace lz77_huff
 {
     public class HeapNode
     {
@@ -45,39 +46,65 @@ namespace lz77___ac
     {
         public static void Main()
         {
-            string text = "enwik7.txt";///"enwik7.txt"
+
+            /* string text = "text.txt";
+             string line;
+             string wholeText = "";
+             using (StreamReader reader = new StreamReader(text, Encoding.UTF8))
+             {
+                 while ((line = reader.ReadLine()) != null)
+                 {
+                     wholeText += line + " ";
+                 }
+             }
+
+             int [] p;
+             char [] symb;
+
+             textAlphabet(wholeText, out symb, out p);
+
+             string[] keys = new string [symb.Length];
+             char[] chars = new char[symb.Length];
+
+             HuffCodes(symb, p, out chars, out keys);
+
+
+             string res = HcAlg(wholeText, keys, chars);
+             string reverse_text = "reverse_text.txt";
+             List<object> list_Res = lz77(res, 10);
+             res = listToStr(list_Res);
+             using (StreamWriter writer = new StreamWriter(reverse_text))
+             {
+
+                 writer.Write(res);
+
+             }
+
+
+             Console.WriteLine("Conversion in file");
+             Console.ReadKey();*/
+            string text = "rusTolstoy.txt";///"enwik7.txt"
             string line;
             string wholeText = "";
             string reverse_text = "reverse_text.txt";
             using (StreamReader reader = new StreamReader(text, Encoding.UTF8))
             {
-                using (StreamWriter writer = new StreamWriter(reverse_text))
+                using (FileStream fileStream = new FileStream(reverse_text, FileMode.Create, FileAccess.Write))
                 {
                     while ((line = reader.ReadLine()) != null)
                     {
-                        wholeText = line + 'ؐ';//
+                        wholeText = line;//+ 'ؐ'
                         int[] p;
                         char[] symb;
-                        int j;
-                        string result;
-                        int chunkSize = 10;
-                        List<object> list_Res = lz77(wholeText, 5);
-                        result = listToStr(list_Res);
-                        for (j = 0; j < result.Length; j += chunkSize)
-                        {
-                            string chunk = result.Substring(j, Math.Min(chunkSize, result.Length - j));
-                            char[] chars2;
-                            double[] pos2;
-                            textAlphabet(chunk, out chars2, out pos2);
+                        //List<object> list_Res = lz77(wholeText, 5);
+                        //wholeText = listToStr(list_Res);
+                        textAlphabet(wholeText, out symb, out p);
 
-                            double res2 = arifm_coding(chunk, pos2, chars2);
-                            string res = res2.ToString();
-                            res = res.Substring(2, res.Length - 2);
-                            long number = long.Parse(res); // Преобразование строки в целое число
-                            res = number.ToString("X");
-                            writer.Write(res);
+                        string[] keys = new string[symb.Length];
+                        char[] chars = new char[symb.Length];
 
-                        }
+                        HuffCodes(symb, p, out chars, out keys);     
+                        HcAlg(wholeText, keys, chars, fileStream);
                     }
                 }
             }
@@ -89,8 +116,148 @@ namespace lz77___ac
             Console.ReadKey();
 
         }
+        
+        public static void HuffCodes(char[] s, int[] v, out char[] chars, out string[] keys)
+        {
+            chars = new char[s.Length];
+            keys = new string[s.Length];
 
-       
+            var minHeap = new SortedSet<HeapNode>(Comparer<HeapNode>.Create((a, b) =>
+            {
+                int valComparison = a.Val.CompareTo(b.Val);
+                if (valComparison != 0)
+                {
+                    return valComparison;
+                }
+                // если значения равны, сравниваем символы
+                return a.Sym.CompareTo(b.Sym);
+            }));
+
+            int i = 0;
+            for (i = 0; i < s.Length; i++)
+            {
+                minHeap.Add(new HeapNode(s[i], v[i]));
+            }
+
+            while (minHeap.Count > 1)
+            {
+                var leftChild = minHeap.First();
+                minHeap.Remove(leftChild);
+
+                var rightChild = minHeap.First();
+                minHeap.Remove(rightChild);
+
+                var tmp = new HeapNode('+', (leftChild.Val + rightChild.Val));
+                tmp.LeftChild = leftChild;
+                tmp.RightChild = rightChild;
+
+                minHeap.Add(tmp);
+            }
+            i = 0;
+            if (chars.Length > 0)
+            {
+                CodesToArr(minHeap.First(), chars, keys, "", ref i);
+            }
+            
+        }
+
+        public static void CodesToArr(HeapNode root, char[] symb, string[] freq, string str, ref int i)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            if (root.Sym != '+')
+            {
+                symb[i] = root.Sym;
+                freq[i] = str;
+                i++;
+            }
+
+            CodesToArr(root.LeftChild, symb, freq, str + "0", ref i);
+            CodesToArr(root.RightChild, symb, freq, str + "1", ref i);
+        }
+        
+
+        public static void HcAlg(string main, string[] keys, char[] chars, Stream outputStream)
+        {
+            BitArray res = new BitArray(main.Length * 8); 
+            int bitIndex = 0;
+
+            for (int i = 0; i < main.Length; i++)
+            {
+                char tmp = main[i];
+                int index = Array.IndexOf(chars, tmp);
+                string key = "";
+                if (index != -1)
+                {
+                    key = keys[index];
+                }
+
+                if (key != null)
+                {
+                    foreach (char keyChar in key)
+                    {
+                        if (keyChar == '1')
+                        {
+                            res[bitIndex] = true;
+                        }
+                        else if (keyChar == '0')
+                        {
+                            res[bitIndex] = false;
+                        }
+                        bitIndex++;
+                    }
+                }
+                
+            }
+
+            if (bitIndex < res.Length)
+            {
+                BitArray trimmedRes = new BitArray(bitIndex);
+                for (int i = 0; i < bitIndex; i++)
+                {
+                    trimmedRes[i] = res[i];
+                }
+                res = trimmedRes;
+            }
+
+            byte[] bytes = new byte[(res.Length - 1) / 8 + 1];
+            res.CopyTo(bytes, 0);
+
+            outputStream.Write(bytes, 0, bytes.Length);
+        }
+    
+        public static void textAlphabet(string s, out char[] chars, out int[] pos)
+        {
+            //var alphabet = s.Where(c => char.IsLetter(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c)).Distinct().OrderBy(c => c).ToArray();
+            var alphabet = s.Distinct()
+                .OrderBy(c => (int)c) // Сортировка по номеру символа в Unicode
+                .ToArray();
+            Array.Sort(alphabet);
+            chars = alphabet;
+            int[] freq = new int[chars.Length];
+            pos = new int[chars.Length];
+            int k = 0;
+            foreach (char ch in s)
+            {
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    if (ch == alphabet[i])
+                    {
+                        freq[i] += 1;
+                        k++;
+                        break;
+                    }
+                }
+            }
+            for (int i = 0; i < chars.Length; i++)
+            {
+                pos[i] += freq[i];
+            }
+        }
+        
         public struct Node
         {
             public int offset; // отступ влево
@@ -108,64 +275,7 @@ namespace lz77___ac
             }
         }
 
-        static double arifm_coding(string s, double[] p, char[] chars)
-        {
-            double[] intervals = new double[p.Length + 1];
-            double left_border = 0;
-            double right_border = 1;
-            double k = 0;
-            for (int i = 1; i < p.Length + 1; i++)
-            {
-                k += p[i - 1];
-                intervals[i] = k;
-            }
-            char toFind = ' ';
-            int index = 0;
-
-            foreach (char c in s)
-            {
-                double part_length = right_border - left_border;
-                toFind = c;
-                index = Array.IndexOf(chars, toFind);
-                left_border += intervals[index] * part_length;
-                right_border = left_border + p[index] * part_length;
-                if (left_border == right_border)
-                {
-                    break;
-                }
-            }
-            double res = (left_border + right_border) / 2;
-
-            return res;
-        }
-
-        static void textAlphabet(string s, out char[] chars, out double[] pos)
-        {
-            var alphabet = s.Distinct()
-                .OrderBy(c => (int)c)
-                .ToArray();
-            Array.Sort(alphabet);
-            chars = alphabet;
-            double[] freq = new double[chars.Length];
-            pos = new double[chars.Length];
-            int k = 0;
-            foreach (char ch in s)
-            {
-                for (int i = 0; i < chars.Length; i++)
-                {
-                    if (ch == alphabet[i])
-                    {
-                        freq[i] += 1;
-                        k++;
-                        break;
-                    }
-                }
-            }
-            for (int i = 0; i < chars.Length; i++)
-            {
-                pos[i] += freq[i] / k;
-            }
-        }
+   
         static List<object> lz77(string data, int buff_size)
         {
             List<object> triplet_list = new List<object>(); //список в котором и одиночные символы и ноды
@@ -221,7 +331,7 @@ namespace lz77___ac
             }
             return triplet_list; // возвращаем список нодд и букв
         }
-
+        
         static public bool IsChar(object obj) // проверяем нода или буква
         {
             return obj is char;
@@ -238,11 +348,11 @@ namespace lz77___ac
                 triplet_list.Add(triplet);
             }
         }
-
+        
         static public string listToStr(List<object> res_list)
         {
             string res = "";
-            foreach (object list in res_list)
+            foreach (object list in res_list) 
             {
                 if (IsChar(list))
                 {
@@ -260,3 +370,4 @@ namespace lz77___ac
         }
     }
 }
+
