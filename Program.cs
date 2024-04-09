@@ -1,104 +1,144 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq;
+using System.ComponentModel.Design;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Net.Mail;
+using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace suffix1
+class Program
 {
-    public class Program
+    public class FileCompressionRatio
     {
-        public static void Main()
+        public static double GetCompressionRatio(string filePath1, string filePath2)
         {
-            string text = "абракадабра";
-            Console.WriteLine("Строка: " + text);
-            int[] suffixArray = suffArr(text);
-            Console.WriteLine("Cуффиксный массив");
-            foreach (int i in suffixArray)
-            {
-                Console.Write(i + " ");
-            }
-            Console.WriteLine();
-            string newStr = "абракадабра";
-            int[] suffArray = { 10, 7, 0, 5, 3, 8, 1, 6, 4, 9, 2 };
+            FileInfo fileInfo1 = new FileInfo(filePath1);
+            FileInfo fileInfo2 = new FileInfo(filePath2);
 
-            string lastColumn = getLastCol(newStr, suffArray);
-            Console.WriteLine("Последний столбец: " + lastColumn);
-            //string str = "banana$";
-            string str = "aaaaaaab$";
-            Console.WriteLine("Для слова: {0}", str);
-            char[] suf = new char[str.Length];
-            suf = getSuf(str);
-            Console.WriteLine("Суффиксный массив:");
-            foreach (char c in suf)
-            {
-                Console.Write("{0} ",(char)c);
-            }
-            Console.ReadKey();
-        }
+            long size1 = fileInfo1.Length;
+            long size2 = fileInfo2.Length;
 
-        public static char[] getSuf(string s)
-        {
-            char[] res = new char[s.Length];
-            res[s.Length - 1] = 'S';
-            res[s.Length - 2] = 'L';
-            for (int i = s.Length - 3; i >=0; i--)
+            if (size1 == 0 || size2 == 0)
             {
-                if (s[i] < s[i + 1])
-                {
-                    res[i] = 'S';
-                }
-                else if (s[i] > s[i + 1])
-                {
-                    res[i] = 'L';
-                }
-                else
-                {
-                    res[i] = res[i + 1];
-                }
+                throw new ArgumentException("File size cannot be zero.");
             }
-            return res;
-        }
-        public static string getLastCol(string s, int[] suffixArray)
-        {
-            int len = s.Length;
-            int ind = 0;
-            StringBuilder lastColumn = new StringBuilder();
-            for (int i = 0; i < len; i++)
-            {
-                ind = suffixArray[i];
-                if (ind == 0)
-                {
-                    lastColumn.Append(s[len - 1]);
-                }
-                else
-                {
-                    lastColumn.Append(s[ind - 1]);
-                }
-            }
-            return lastColumn.ToString();
-        }
 
+            double ratio = (double)size1 / size2;
 
-
-        public static int[] suffArr(string s)
-        {
-            int len = s.Length;
-            string[] suffixes = new string[len];
-            for (int i = 0; i < len; i++)
-            {
-                suffixes[i] = s.Substring(i);
-            }
-            Array.Sort(suffixes);
-            int[] suffixArray = new int[len];
-            for (int i = 0; i < len; i++)
-            {
-                suffixArray[i] = len - suffixes[i].Length;
-            }
-            return suffixArray;
+            return ratio;
         }
     }
+    static void Main()
+    {
+        string text = "rusTolstoy.txt"; // файл с изображением 
+        string result = "convertRes.txt"; //сжатие чб
+        string revers = "output_new.txt"; //разжатие чб
+
+        if (!File.Exists(text)) // проверка существования
+        {
+            Console.WriteLine("Файл не найден.");
+            return;
+        }
+
+        using (StreamReader reader = new StreamReader(text, Encoding.UTF8)) //чтение построчно
+        {
+            using (StreamWriter res = new StreamWriter(result))
+            {
+                string line;
+                string hlp = "";
+                char currentChar = '0';
+                while ((line = reader.ReadLine()) != null) // пптриааа
+                {
+                    int count = 1;
+                    int index = 0;
+                    
+                    while (index < (line.Length - 2))
+                    {
+                        currentChar = line[index];
+                        if (currentChar == line[index + 1])
+                        {
+                            count++;
+                            index++;
+                        }
+                        else
+                        {
+                            
+                            if (count == 1)
+                            {
+                                index++;
+                                hlp += line[index - 1];
+                                while (line[index] != line[index-1] && index != line.Length -1)
+                                {
+                                    hlp += line[index];
+                                    index++;
+                                }
+                                hlp = hlp.Substring(0, hlp.Length - 1);
+                                res.Write('&');
+                                res.Write(hlp);
+                                res.Write('&');
+                                hlp = "";
+                                index--;
+                            }
+                            else
+                            {
+                                res.Write((char)(count));
+                                res.Write(currentChar);
+                                count = 1;
+                                index++;
+                            }
+                        }
+
+                    }
+                    
+                    res.Write((char)(count));
+                    res.Write(currentChar);
+                    res.Write('\n');
+                }
+            }
+        }
+
+        //using (StreamReader reader = new StreamReader(result)) //чтение построчно
+        //{
+        //    using (StreamWriter togrImg = new StreamWriter(revers))
+        //    {
+        //        string line;
+        //        while ((line = reader.ReadLine()) != null)
+        //        {
+        //            int i = 0;
+        //            while (i < line.Length - 1)
+        //            {
+        //                if (line[i] == '&')
+        //                {
+        //                    i++;
+        //                    while (line[i] != '&')
+        //                    {
+        //                        togrImg.Write(line[i]);
+        //                        i++;
+        //                    }
+        //                    i++;
+        //                }
+        //                else
+        //                {
+        //                    int count = (int)(line[i]);
+        //                    char charecter = line[i + 1];
+
+        //                    for (int j = 0; j < count; j++)
+        //                    {
+        //                        togrImg.Write(charecter);
+        //                        i++;
+        //                    }
+        //                }
+                        
+
+        //            }
+        //            togrImg.Write('\n');
+        //        }
+        //    }
+        //}
+        double ratio = 0;
+        ratio = FileCompressionRatio.GetCompressionRatio(result, text);
+        Console.WriteLine(ratio);
+        Console.ReadKey();
+    }
 }
-
-
