@@ -1,149 +1,215 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace arifmeticCoding
+namespace burrows_wheeler_transform
 {
+    public class FileCompressionRatio
+    {
+        public static double GetCompressionRatio(string filePath1, string filePath2)
+        {
+            FileInfo fileInfo1 = new FileInfo(filePath1);
+            FileInfo fileInfo2 = new FileInfo(filePath2);
+
+            long size1 = fileInfo1.Length;
+            long size2 = fileInfo2.Length;
+
+            if (size1 == 0 || size2 == 0)
+            {
+                throw new ArgumentException("File size cannot be zero.");
+            }
+
+            double ratio = (double)size1 / size2;
+
+            return ratio;
+        }
+    }
     internal class Program
     {
+
+        public static int part = 50;
         static void Main(string[] args)
         {
-            string s = "eeedaaba";
-            char[] chars = { 'a', 'b', 'c', 'd', 'e'};
-            double[] pos = {0.5 , 0.25, 0.0625, 0.125, 0.0625};
-            Console.WriteLine("Для алфавита: ");
-            int i = 0;
-            for (i = 0; i < pos.Length; i++)
-            {
-                Console.WriteLine("{0} - {1}", chars[i], pos[i]);
-            }
-            Console.WriteLine("Строка: {0}", s);
-            double[] p = new double[s.Length];
-            double res = arifm_coding(s, pos, chars);
-            Console.WriteLine("Среднее значение {0}", res);
-            string rev_str = reverse_arifm_coding(res, pos, chars, s.Length);
-            Console.WriteLine("Обратное перобразование {0}", rev_str);
-            Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+            string inputStr = "абракадабра";
+            int index = 0;
+            string result;
+            Console.WriteLine("Изначальная строка: {0}", inputStr);
+            BWT(out result, inputStr, ref index); 
+            Console.WriteLine("Строка после преобразования: {0}", result);
+            Console.WriteLine("Индекс строки: {0}", index);
+            string res = rBWT(result, index);
+            Console.WriteLine("Обратное преобразование: {0}", res);
+            Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+            Console.WriteLine();
             string text = "text.txt";
-            string line;                
-            string wholeText = "";
-            using (StreamReader reader = new StreamReader(text, Encoding.UTF8))
+            string textRes = "textRes.txt";
+            string chb = "chb.txt";
+            string chbRes = "chbRes.txt";
+            string grey = "grey.txt";
+            string greyRes = "greyRes.txt";
+            bigBWT(text, textRes);
+            bigBWT(chb, chbRes);
+            bigBWT(grey, greyRes);
+            using (StreamReader reader = new StreamReader(text, Encoding.UTF8)) 
+            {
+                Console.WriteLine("текст до BWT: {0}", strLen(reader));
+            }
+            using (StreamReader reader = new StreamReader(textRes, Encoding.UTF8)) 
+            {
+                Console.WriteLine("текст после BWT: {0}", strLen(reader));
+            }
+            Console.WriteLine();
+            using (StreamReader reader = new StreamReader(chb, Encoding.UTF8)) 
+            {
+                Console.WriteLine("чб до BWT: {0}", strLen(reader));
+            }
+            using (StreamReader reader = new StreamReader(chbRes, Encoding.UTF8)) 
+            {
+                Console.WriteLine("чб после BWT: {0}", strLen(reader));
+            }
+            Console.WriteLine();
+            using (StreamReader reader = new StreamReader(grey, Encoding.UTF8)) 
+            {
+                Console.WriteLine("оттенки серого до BWT: {0}", strLen(reader));
+            }
+            using (StreamReader reader = new StreamReader(greyRes, Encoding.UTF8)) 
+            {
+                Console.WriteLine("оттенки серого после BWT: {0}", strLen(reader));
+            }
+
+           
+            Console.ReadKey();
+
+        }
+        static double strLen(StreamReader reader)
+        {
+            string line;
+            double k = 0;
+            double part = 0;
+            double j = 0;
+            double len = 0;
+            while ((line = reader.ReadLine()) != null)
+            {
+                len += line.Length;
+                for (int i = 0; i < line.Length - 1; i++)
+                {
+                    if (line[i] == line[i + 1])
+                    {
+                        k++;
+                        if (j == 0)
+                        {
+                            part++;
+                            j++;
+                        }
+                    }
+                    else
+                    {
+                        j = 0;
+                    }
+                }
+            }
+            k = k + part;
+            double lengthStr;
+            lengthStr = (k - 2 * part) / len;
+            return lengthStr;
+        }
+        static void BWT(out string result, string inStr, ref int ind)
+        {
+            result = "";
+            string[] bwt_matrix = new string [inStr.Length] ;
+            string toAdd;
+            string mainPart;
+            string newStr = inStr;
+            string part;
+            int len = newStr.Length;
+            for (int i = 0; i < len; i++)
+            {
+                toAdd = inStr.Substring(0, 1);
+                mainPart = inStr.Substring(1, len - 1);
+                inStr = mainPart + toAdd;
+                bwt_matrix[i] = inStr;
+
+            }
+            string[] sorted_bwt = bwt_matrix.OrderBy(word => word).ToArray();
+            for (int i = 0; i < len; i++)
+            {
+                if (sorted_bwt[i] == newStr)
+                {
+                    ind = i;
+                }
+            }
+            for (int i = 0; i < len; i++)
+            {
+                part = sorted_bwt[i].Substring(len - 1);
+                result += part;
+            }
+
+        }
+        static string rBWT(string result, int ind)
+        {
+            int len = result.Length;
+            string[] bwt_matrix = new string[len];
+            for (int i = 0; i < len; i++)
+            {
+                bwt_matrix[i] = string.Empty; 
+            }
+            for (int j = 0; j < len - 1; j++)
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    bwt_matrix[i] = result[i] + bwt_matrix[i];
+                }
+                bwt_matrix = bwt_matrix.OrderBy(bwt => bwt).ToArray();
+            }
+            for (int i = 0; i < len; i++)
+            {
+                bwt_matrix[i] = bwt_matrix[i] + result[i];
+            }
+            return bwt_matrix[ind];
+        }
+
+        static void bigBWT(string inp, string outp)
+        {
+            string line;
+            using (StreamReader reader = new StreamReader(inp, Encoding.UTF8))  
+            using (StreamWriter writer = new StreamWriter(outp))                 
             {
                 while ((line = reader.ReadLine()) != null)
                 {
-                    wholeText += line + " ";
-                }
-            }
-            int chunkSize = 10;
-            Console.WriteLine("Для произвольного текста из файла: ");
-            int j;
-            string reverse_text = "reverse_text.txt";
-            using (StreamWriter writer = new StreamWriter(reverse_text))
-            {
-                for (j = 0; j < wholeText.Length; j += chunkSize)
-                {
-                    string chunk = wholeText.Substring(j, Math.Min(chunkSize, wholeText.Length - j));
-                    char[] chars2;
-                    double[] pos2;
-                    textAlphabet(chunk, out chars2, out pos2);               
-                    for (i = 0; i < pos2.Length; i++)
-                    {
-                        Console.WriteLine("{0} - {1}", chars2[i], pos2[i]);
+                    int len = line.Length;          
+                    int k = 0;                    
+
+                    for (int i = len; i > 0; i -= part){
+                        string textPart;           
+                        int partLen;      
+
+                        if (i - part < 0) 
+                        {
+                            textPart = line.Substring(part * k);                         
+                            partLen = line.Length - part * k;   
+                        }
+                        else
+                        {
+                            textPart = line.Substring(part * k, part);       
+                            k++;
+                            partLen = part;                                
+                        }
+                        string result;
+                        int ind = 0;
+                        BWT(out result, textPart, ref ind);
+                        writer.Write(result);           
+                        writer.Write((char)(ind + part));     
+
                     }
-                    double res2 = arifm_coding(chunk, pos2, chars2);
-                    Console.WriteLine("Среднее значение {0}", res2);
-                    
-                    string rev_toFile = reverse_arifm_coding(res2, pos2, chars2, chunk.Length);
-                    writer.Write(rev_toFile);
+                    writer.Write("\n");  
                 }
             }
-            Console.WriteLine("Обратное перобразование записано в файл");
-            Console.ReadKey();
         }
 
-        static double arifm_coding(string s, double[] p, char[] chars)
-        {
-            double[] intervals = new double [p.Length + 1];
-            double left_border = 0;
-            double right_border = 1;
-            double k = 0;
-            for (int i = 1; i < p.Length + 1; i++)
-            {
-                k += p[i-1];
-                intervals[i] = k;
-            }
-            char toFind = ' ';
-            int index = 0;
-            
-            foreach (char c in s)
-            {
-                double part_length = right_border - left_border;
-                toFind = c;
-                index = Array.IndexOf(chars, toFind);
-                left_border += intervals[index]*part_length;
-                right_border = left_border + p[index]*part_length;
-                if (left_border == right_border)
-                {
-                    break;
-                }
-            }
-            double res = (left_border + right_border) / 2;
-            Console.WriteLine("Левая граница {0}", left_border);
-            Console.WriteLine("Правая граница {0}", right_border);
-            return res;
-        }
-        static string reverse_arifm_coding(double code, double[] p, char[] chars, int len)
-        {
-            double[] intervals = new double[p.Length + 1];
-            double k = 0;
-            for (int i = 1; i < p.Length + 1; i++)
-            {
-                k += p[i - 1];
-                intervals[i] = k;
-            }
-            string result = "";
-            for (int i = 0; i < len; i++)
-            {
-                for (int j = 0; j < p.Length; j++)
-                {
-                    if (code >= intervals[j] && code < intervals[j+1])
-                    {
-                        result += chars[j];
-                        code = (code - intervals[j]) / (intervals[j+1] - intervals[j]);
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
-        static void textAlphabet(string s, out char[] chars, out double[] pos)
-        {
-            var alphabet = s.Where(c => char.IsLetter(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c)).Distinct().OrderBy(c => c).ToArray();
-            Array.Sort(alphabet);
-            chars = alphabet;
-            double[] freq = new double[chars.Length];
-            pos = new double[chars.Length];
-            int k = 0;
-            foreach (char ch in s)
-            {
-                for (int i = 0; i < chars.Length; i++)
-                {
-                    if (ch == alphabet[i])
-                    {
-                        freq[i] += 1;
-                        k++;
-                        break;
-                    }
-                }
-            }
-            for (int i = 0; i < chars.Length; i++)
-            {
-                pos[i] += freq[i] / k;
-            }
-        }
     }
 }

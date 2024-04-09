@@ -1,0 +1,80 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace burrows_wheeler_transform
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            string inputStr = "абракадабра";
+            int index = 0;
+            string result;
+            BWT(out result, inputStr, ref index); 
+            Console.WriteLine(result);
+            Console.WriteLine(index);
+            string res = rBWT(result, index);
+            Console.WriteLine(res);
+            Console.ReadKey();
+
+        }
+        static void BWT(out string result, string inStr, ref int ind)
+        {
+            result = "";
+            string[] bwt_matrix = new string [inStr.Length] ;
+            string toAdd;
+            string mainPart;
+            string newStr = inStr;
+            string part;
+            int len = newStr.Length;
+            for (int i = 0; i < len; i++)
+            {
+                toAdd = inStr.Substring(0, 1);
+                mainPart = inStr.Substring(1, len - 1);
+                inStr = mainPart + toAdd;
+                bwt_matrix[i] = inStr;
+
+            }
+            string[] sorted_bwt = bwt_matrix.OrderBy(word => word).ToArray();
+            for (int i = 0; i < len; i++)
+            {
+                if (sorted_bwt[i] == newStr)
+                {
+                    ind = i;
+                }
+            }
+            for (int i = 0; i < len; i++)
+            {
+                part = sorted_bwt[i].Substring(len - 1);
+                result += part;
+            }
+
+        }
+        static string rBWT(string result, int ind)
+        {
+            int len = result.Length;
+            string[] bwt_matrix = new string[len];
+            for (int i = 0; i < len; i++)
+            {
+                bwt_matrix[i] = string.Empty; 
+            }
+            for (int j = 0; j < len - 1; j++)
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    bwt_matrix[i] = result[i] + bwt_matrix[i];
+                }
+                bwt_matrix = bwt_matrix.OrderBy(bwt => bwt).ToArray();
+            }
+            for (int i = 0; i < len; i++)
+            {
+                bwt_matrix[i] = bwt_matrix[i] + result[i];
+            }
+            return bwt_matrix[ind];
+        }
+    }
+}

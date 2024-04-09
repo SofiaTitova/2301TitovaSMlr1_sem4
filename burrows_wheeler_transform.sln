@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "burrows_wheeler_transform", "burrows_wheeler_transform.csproj", "{CC076ABC-6447-40FC-A3DA-28DD16970F91}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC076ABC-6447-40FC-A3DA-28DD16970F91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC076ABC-6447-40FC-A3DA-28DD16970F91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC076ABC-6447-40FC-A3DA-28DD16970F91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC076ABC-6447-40FC-A3DA-28DD16970F91}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {233D8378-49BF-4CA4-8DA1-EB2D88886DD4}
+	EndGlobalSection
+EndGlobal
