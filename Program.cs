@@ -1,13 +1,16 @@
-﻿
+﻿using bwt___mft___rlf___ha;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
-namespace bwt___mtf___rle___ac
+namespace bwt___mtf___ha
 {
     public class HeapNode
     {
@@ -49,9 +52,12 @@ namespace bwt___mtf___rle___ac
         public static int part = 50;
         static void Main(string[] args)
         {
-            string graf = "rusTolstoy.txt"; //"graph.txt"
+
+
+            string graf = "enwik7.txt"; //"graph.txt"
             string graf_bwt = "bwt_graf.txt";
             string graf_res = "resgraph.txt";
+            //bigBWT(graf, graf_bwt);
             BWTFast bwt = new BWTFast();
             string wholeText = "";
             string line = "";
@@ -87,24 +93,24 @@ namespace bwt___mtf___rle___ac
             Console.WriteLine("+");
             result = rle(result);
             Console.WriteLine("+");
-            int chunkSize = 10;
-            int j;
-            using (StreamWriter writer = new StreamWriter(graf_res))
+            using (FileStream fileStream = new FileStream(graf_res, FileMode.Create, FileAccess.Write))
             {
-                for (j = 0; j < result.Length; j += chunkSize)
+                index = 0;
+                while (index < result.Length)
                 {
-                    string chunk = result.Substring(j, Math.Min(chunkSize, result.Length - j));
-                    char[] chars2;
-                    double[] pos2;
-                    textAlphabet(chunk, out chars2, out pos2);
+                    int k = Math.Min(100, result.Length - index);
+                    wholeText = result.Substring(index, k);
+                    int[] p;
+                    char[] symb;
 
-                    double res2 = arifm_coding(chunk, pos2, chars2);
-                    string res = res2.ToString();
-                    res = res.Substring(2, res.Length - 2);
-                    long number = long.Parse(res); // Преобразование строки в целое число
-                    res = number.ToString("X");
-                    writer.Write(res);
+                    textAlphabet(wholeText, out symb, out p);
 
+                    string[] keys = new string[symb.Length];
+                    char[] chars = new char[symb.Length];
+
+                    HuffCodes(symb, p, out chars, out keys);
+                    HcAlg(wholeText, keys, chars, fileStream);
+                    index += k;
                 }
             }
 
@@ -144,8 +150,8 @@ namespace bwt___mtf___rle___ac
                         }
                         hlp = hlp.Substring(0, hlp.Length - 1);
                         res += '&';
-                        res += hlp;
-                        res += '&';
+                        res +=hlp;
+                        res +='&';
                         hlp = "";
                         index--;
                     }
@@ -158,13 +164,44 @@ namespace bwt___mtf___rle___ac
                     }
                 }
 
-
+                
             }
             res += (char)(count);
             res += currentChar;
             return res;
         }
-        
+        static void BWT(out string result, string inStr, ref int ind)
+        {
+            result = "";
+            string[] bwt_matrix = new string[inStr.Length];
+            string toAdd;
+            string mainPart;
+            string newStr = inStr;
+            string part;
+            int len = newStr.Length;
+            for (int i = 0; i < len; i++)
+            {
+                toAdd = inStr.Substring(0, 1);
+                mainPart = inStr.Substring(1, len - 1);
+                inStr = mainPart + toAdd;
+                bwt_matrix[i] = inStr;
+
+            }
+            string[] sorted_bwt = bwt_matrix.OrderBy(word => word).ToArray();
+            for (int i = 0; i < len; i++)
+            {
+                if (sorted_bwt[i] == newStr)
+                {
+                    ind = i;
+                }
+            }
+            for (int i = 0; i < len; i++)
+            {
+                part = sorted_bwt[i].Substring(len - 1);
+                result += part;
+            }
+
+        }
         static List<char> alphabet(string s)
         {
             List<char> chars = new List<char>();
@@ -200,47 +237,162 @@ namespace bwt___mtf___rle___ac
             }
             return res;
         }
-        
-        static double arifm_coding(string s, double[] p, char[] chars)
+        static void bigBWT(string inp, string outp)
         {
-            double[] intervals = new double[p.Length + 1];
-            double left_border = 0;
-            double right_border = 1;
-            double k = 0;
-            for (int i = 1; i < p.Length + 1; i++)
+            string line;
+            using (StreamReader reader = new StreamReader(inp, Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(outp))
             {
-                k += p[i - 1];
-                intervals[i] = k;
-            }
-            char toFind = ' ';
-            int index = 0;
-
-            foreach (char c in s)
-            {
-                double part_length = right_border - left_border;
-                toFind = c;
-                index = Array.IndexOf(chars, toFind);
-                left_border += intervals[index] * part_length;
-                right_border = left_border + p[index] * part_length;
-                if (left_border == right_border)
+                while ((line = reader.ReadLine()) != null)
                 {
-                    break;
+                    int len = line.Length;
+                    int k = 0;
+
+                    for (int i = len; i > 0; i -= part)
+                    {
+                        string textPart;
+                        int partLen;
+
+                        if (i - part < 0)
+                        {
+                            textPart = line.Substring(part * k);
+                            partLen = line.Length - part * k;
+                        }
+                        else
+                        {
+                            textPart = line.Substring(part * k, part);
+                            k++;
+                            partLen = part;
+                        }
+                        string result;
+                        int ind = 0;
+                        BWT(out result, textPart, ref ind);
+                        writer.Write(result);
+                        writer.Write((char)(ind + part));
+
+                    }
+                    writer.Write("\n");
                 }
             }
-            double res = (left_border + right_border) / 2;
-
-            return res;
         }
 
-        static void textAlphabet(string s, out char[] chars, out double[] pos)
+
+
+        public static void HuffCodes(char[] s, int[] v, out char[] chars, out string[] keys)
         {
-            var alphabet = s.Distinct()
-                .OrderBy(c => (int)c)
-                .ToArray();
+            chars = new char[s.Length];
+            keys = new string[s.Length];
+
+            var minHeap = new SortedSet<HeapNode>(Comparer<HeapNode>.Create((a, b) =>
+            {
+                int valComparison = a.Val.CompareTo(b.Val);
+                if (valComparison != 0)
+                {
+                    return valComparison;
+                }
+                // если значения равны, сравниваем символы
+                return a.Sym.CompareTo(b.Sym);
+            }));
+
+            int i = 0;
+            for (i = 0; i < s.Length; i++)
+            {
+                minHeap.Add(new HeapNode(s[i], v[i]));
+            }
+
+            while (minHeap.Count > 1)
+            {
+                var leftChild = minHeap.First();
+                minHeap.Remove(leftChild);
+
+                var rightChild = minHeap.First();
+                minHeap.Remove(rightChild);
+
+                var tmp = new HeapNode('+', (leftChild.Val + rightChild.Val));
+                tmp.LeftChild = leftChild;
+                tmp.RightChild = rightChild;
+
+                minHeap.Add(tmp);
+            }
+            i = 0;
+            if (chars.Length > 0)
+            {
+                CodesToArr(minHeap.First(), chars, keys, "", ref i);
+            }
+
+        }
+
+        public static void CodesToArr(HeapNode root, char[] symb, string[] freq, string str, ref int i)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            if (root.Sym != '+')
+            {
+                symb[i] = root.Sym;
+                freq[i] = str;
+                i++;
+            }
+
+            CodesToArr(root.LeftChild, symb, freq, str + "0", ref i);
+            CodesToArr(root.RightChild, symb, freq, str + "1", ref i);
+        }
+
+
+        public static void HcAlg(string main, string[] keys, char[] chars, Stream outputStream)
+        {
+            BitArray res = new BitArray(main.Length * 8);
+            int bitIndex = 0;
+
+            for (int i = 0; i < main.Length; i++)
+            {
+                char tmp = main[i];
+                int index = Array.IndexOf(chars, tmp);
+                string key = "";
+                if (index != -1)
+                {
+                    key = keys[index];
+                }
+
+                foreach (char keyChar in key)
+                {
+                    if (keyChar == '1')
+                    {
+                        res[bitIndex] = true;
+                    }
+                    else if (keyChar == '0')
+                    {
+                        res[bitIndex] = false;
+                    }
+                    bitIndex++;
+                }
+            }
+
+            if (bitIndex < res.Length)
+            {
+                BitArray trimmedRes = new BitArray(bitIndex);
+                for (int i = 0; i < bitIndex; i++)
+                {
+                    trimmedRes[i] = res[i];
+                }
+                res = trimmedRes;
+            }
+
+            byte[] bytes = new byte[(res.Length - 1) / 8 + 1];
+            res.CopyTo(bytes, 0);
+
+            outputStream.Write(bytes, 0, bytes.Length);
+        }
+
+        public static void textAlphabet(string s, out char[] chars, out int[] pos)
+        {
+            var alphabet = s.Where(c => char.IsLetter(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c)).Distinct().OrderBy(c => c).ToArray();
             Array.Sort(alphabet);
             chars = alphabet;
-            double[] freq = new double[chars.Length];
-            pos = new double[chars.Length];
+            int[] freq = new int[chars.Length];
+            pos = new int[chars.Length];
             int k = 0;
             foreach (char ch in s)
             {
@@ -256,7 +408,7 @@ namespace bwt___mtf___rle___ac
             }
             for (int i = 0; i < chars.Length; i++)
             {
-                pos[i] += freq[i] / k;
+                pos[i] += freq[i];
             }
         }
     }
