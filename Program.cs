@@ -3,15 +3,94 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace lz77
+namespace lz77___ac
 {
-    internal class Program
+    public class HeapNode
     {
+        public char Sym { get; set; }
+        public int Val { get; set; }
+        public HeapNode LeftChild { get; set; }
+        public HeapNode RightChild { get; set; }
+
+        public HeapNode(char sym, int val)
+        {
+            Sym = sym;
+            Val = val;
+        }
+    }
+    public class FileCompressionRatio
+    {
+        public static double GetCompressionRatio(string filePath1, string filePath2)
+        {
+            FileInfo fileInfo1 = new FileInfo(filePath1);
+            FileInfo fileInfo2 = new FileInfo(filePath2);
+
+            long size1 = fileInfo1.Length;
+            long size2 = fileInfo2.Length;
+
+            if (size1 == 0 || size2 == 0)
+            {
+                throw new ArgumentException("File size cannot be zero.");
+            }
+
+            double ratio = (double)size1 / size2;
+
+            return ratio;
+        }
+    }
+    public class Program
+    {
+        public static void Main()
+        {
+            string text = "enwik7.txt";///"enwik7.txt"
+            string line;
+            string wholeText = "";
+            string reverse_text = "reverse_text.txt";
+            using (StreamReader reader = new StreamReader(text, Encoding.UTF8))
+            {
+                using (StreamWriter writer = new StreamWriter(reverse_text))
+                {
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        wholeText = line + 'ؐ';//
+                        int[] p;
+                        char[] symb;
+                        int j;
+                        string result;
+                        int chunkSize = 10;
+                        List<object> list_Res = lz77(wholeText, 5);
+                        result = listToStr(list_Res);
+                        for (j = 0; j < result.Length; j += chunkSize)
+                        {
+                            string chunk = result.Substring(j, Math.Min(chunkSize, result.Length - j));
+                            char[] chars2;
+                            double[] pos2;
+                            textAlphabet(chunk, out chars2, out pos2);
+
+                            double res2 = arifm_coding(chunk, pos2, chars2);
+                            string res = res2.ToString();
+                            res = res.Substring(2, res.Length - 2);
+                            long number = long.Parse(res); // Преобразование строки в целое число
+                            res = number.ToString("X");
+                            writer.Write(res);
+
+                        }
+                    }
+                }
+            }
+
+            double re = FileCompressionRatio.GetCompressionRatio(reverse_text, text);
+
+            Console.WriteLine(re);
+            Console.WriteLine("Conversion in file");
+            Console.ReadKey();
+
+        }
+
+       
         public struct Node
         {
             public int offset; // отступ влево
@@ -23,106 +102,70 @@ namespace lz77
                 this.length = length;
                 this.next = next;
             }
-            //public void PrintNodeData() // для вывода
-            //{
-            //    Console.WriteLine($"Offset: {offset}, Length: {length}, Next: {next}");
-            //}
-            public string print()
+            public void PrintNodeData() // для вывода
             {
-                string res = offset.ToString() + length.ToString() + next.ToString();
-                return res;
+                Console.WriteLine($"Offset: {offset}, Length: {length}, Next: {next}");
             }
         }
-        public class FileCompressionRatio
+
+        static double arifm_coding(string s, double[] p, char[] chars)
         {
-            public static double GetCompressionRatio(string filePath1, string filePath2)
+            double[] intervals = new double[p.Length + 1];
+            double left_border = 0;
+            double right_border = 1;
+            double k = 0;
+            for (int i = 1; i < p.Length + 1; i++)
             {
-                FileInfo fileInfo1 = new FileInfo(filePath1);
-                FileInfo fileInfo2 = new FileInfo(filePath2);
+                k += p[i - 1];
+                intervals[i] = k;
+            }
+            char toFind = ' ';
+            int index = 0;
 
-                long size1 = fileInfo1.Length;
-                long size2 = fileInfo2.Length;
-
-                if (size1 == 0 || size2 == 0)
+            foreach (char c in s)
+            {
+                double part_length = right_border - left_border;
+                toFind = c;
+                index = Array.IndexOf(chars, toFind);
+                left_border += intervals[index] * part_length;
+                right_border = left_border + p[index] * part_length;
+                if (left_border == right_border)
                 {
-                    throw new ArgumentException("File size cannot be zero.");
+                    break;
                 }
-
-                double ratio = (double)size1 / size2;
-
-                return ratio;
             }
-        }
-        static void Main(string[] args)
-        {
-            /* string data = "abacabacabadaca$";
-             Console.WriteLine("Начальная строка: {0}", data);
-             Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-             int buff_size = 5;
-             List<object> res_list = new List<object>();
-             res_list = lz77(data, buff_size);
-             foreach (object list in res_list) //это просто для вывода, если одиночный символ то просто выводим, а еслм нода, то выводим все поля
-             {
-                 if (IsChar(list))
-                 {
-                     Console.WriteLine(list.ToString());
-                 }
-                 else
-                 {
-                     Node node = (Node)list;
-                     node.PrintNodeData();
-                 } 
-             }
-             string res = "";
-             res = decoder_lz77(res_list, buff_size); //обратное преобразование
-             Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-             Console.Write("Преобразованная строка: ");
-             Console.WriteLine(res);
-             Console.Write("Получилось ли перобразование ");
-             Console.WriteLine(res == data); //проверяем что правильно преобразует*/
-             string text = "rusTolstoy.txt";
-             string line;
-             string data = "";
-             using (StreamReader reader = new StreamReader(text, Encoding.UTF8))
-             {
-                 while ((line = reader.ReadLine()) != null)
-                 {
-                     data += line + " ";
-                 }
-             }
-             data += "$";
+            double res = (left_border + right_border) / 2;
 
-             int buff_size = 3000;
-            List<object> res_list = new List<object>();
-            res_list = lz77(data, buff_size);
-            string reverse_text = "reverse_text.txt";
-            using (StreamWriter writer = new StreamWriter(reverse_text, false, Encoding.UTF8))
+            return res;
+        }
+
+        static void textAlphabet(string s, out char[] chars, out double[] pos)
+        {
+            var alphabet = s.Distinct()
+                .OrderBy(c => (int)c)
+                .ToArray();
+            Array.Sort(alphabet);
+            chars = alphabet;
+            double[] freq = new double[chars.Length];
+            pos = new double[chars.Length];
+            int k = 0;
+            foreach (char ch in s)
             {
-                foreach (object list in res_list) //это просто для вывода, если одиночный символ то просто выводим, а еслм нода, то выводим все поля
+                for (int i = 0; i < chars.Length; i++)
                 {
-                    if (IsChar(list))
+                    if (ch == alphabet[i])
                     {
-                        writer.Write(list.ToString());
-                    }
-                    else
-                    {
-                        Node node = (Node)list;
-                        string tmp = node.print();
-                        writer.Write(tmp);
+                        freq[i] += 1;
+                        k++;
+                        break;
                     }
                 }
-
             }
-
-
-            double ratio = 0;
-            ratio = FileCompressionRatio.GetCompressionRatio(reverse_text, text);
-            Console.WriteLine(ratio);
-            File.WriteAllText(reverse_text, string.Empty);
-            buff_size += 10000;
-            Console.ReadKey();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                pos[i] += freq[i] / k;
+            }
         }
-
         static List<object> lz77(string data, int buff_size)
         {
             List<object> triplet_list = new List<object>(); //список в котором и одиночные символы и ноды
@@ -133,14 +176,14 @@ namespace lz77
             char nextChar = '\0';
             while (pos < data.Length)//смотрим все элементы строки 
             {
-                int max = Math.Max(pos - buff_size, 0); 
+                int max = Math.Max(pos - buff_size, 0);
                 buf = data.Substring(max, pos - max); //вычисляем буфер 
                 int index_substr = buf.Length;
                 int length = 0;
-                for (int l = 1; l < buf.Length+1; l++)
+                for (int l = 1; l < buf.Length + 1; l++)
                 {
                     string k = data.Substring(pos, l); //отделяем от строки 
-                    if ((buf.LastIndexOf(data.Substring(pos,l)) == -1)) //ищем эту строку в буфере
+                    if ((buf.LastIndexOf(data.Substring(pos, l)) == -1)) //ищем эту строку в буфере
                     {
                         break;
                     }
@@ -178,58 +221,7 @@ namespace lz77
             }
             return triplet_list; // возвращаем список нодд и букв
         }
-        static string decoder_lz77(List<object> triplet_list, int buf_len)
-        {
-            string data = "";
-            bool flag;
-            int offset = 0;
-            int lengthNode = 0;
-            char nextChar = '\0';
-            foreach (object triplet in triplet_list) { 
-                flag = IsChar(triplet); // проверяем нода или буква
-                if (flag)
-                {
-                    offset = 0;
-                    lengthNode = 0;
-                    nextChar = (char)triplet;
-                }
-                else // если нода
-                {
-                    Node node = (Node)triplet;
-                    offset = node.offset; //сохраняем поля в переменные
-                    lengthNode = node.length;
-                    nextChar = node.next;
-                }
 
-                int tmp = 0;
-                int new_lengthNode = lengthNode;
-                if (lengthNode > offset) // если так получилось, значит мы идем по одному и тому же участку буфера несколько раз ( то есть были повторки )
-                {
-                    tmp = offset; // максимальный отступ который мы можем сначала получить это возвращение влево
-
-                    int tmp_len = data.Length;
-                    while (tmp > 0)
-                    {
-
-                        data = data + data.Substring(tmp_len - offset, tmp); // то есть мы проходимся по буфферу, пока не наберем столько символов сколько в сдвиге влево 
-                        tmp = new_lengthNode - tmp;
-                        new_lengthNode = tmp;
-                        if (tmp > offset) //это позволяет переходить в начало буффера
-                        {
-                            tmp = offset;
-                        }
-                    }
-                    
-                    data = data + nextChar; // добавляем следующий элемент
-                }
-                else
-                { 
-                    data = data + data.Substring(data.Length - offset, lengthNode) + nextChar; // собираем строку
-                }
-                
-            }
-            return data;
-        }
         static public bool IsChar(object obj) // проверяем нода или буква
         {
             return obj is char;
@@ -245,6 +237,26 @@ namespace lz77
                 Node triplet = new Node(offset, lengthNode, nextChar);
                 triplet_list.Add(triplet);
             }
+        }
+
+        static public string listToStr(List<object> res_list)
+        {
+            string res = "";
+            foreach (object list in res_list)
+            {
+                if (IsChar(list))
+                {
+                    res += list.ToString();
+                }
+                else
+                {
+                    Node node = (Node)list;
+                    res += node.offset;
+                    res += node.length;
+                    res += node.next;
+                }
+            }
+            return res;
         }
     }
 }
